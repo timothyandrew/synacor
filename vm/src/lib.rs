@@ -24,7 +24,7 @@ enum Opcode {
     RMem,
     WMem,
     Ret,
-    In
+    In,
 }
 
 impl From<u16> for Opcode {
@@ -62,7 +62,7 @@ struct State {
     registers: Vec<u16>,
     ip: usize,
     stack: Vec<u16>,
-    text_buffer: Option<String>
+    text_buffer: Option<String>,
 }
 
 impl State {
@@ -78,7 +78,7 @@ impl State {
             registers: vec![0, 0, 0, 0, 0, 0, 0, 0],
             ip: 0,
             stack: vec![],
-            text_buffer: None
+            text_buffer: None,
         }
     }
 
@@ -122,7 +122,7 @@ impl State {
         self.ip += 1;
 
         for i in self.ip..self.ip + count {
-          values.push(self.instructions[&(i as u16)]);
+            values.push(self.instructions[&(i as u16)]);
         }
 
         self.ip += count;
@@ -147,24 +147,24 @@ impl State {
     }
 
     fn is_buffering_string(&self) -> bool {
-      self.text_buffer.is_some()
+        self.text_buffer.is_some()
     }
 
-    fn text_buffer_char(&mut self) ->  u16 {
-      let c = self.text_buffer.as_mut();
-      let c = c.unwrap();
-      let c = c.pop().unwrap();
-      let c = c as u8;
+    fn text_buffer_char(&mut self) -> u16 {
+        let c = self.text_buffer.as_mut();
+        let c = c.unwrap();
+        let c = c.pop().unwrap();
+        let c = c as u8;
 
-      if c == '\n' as u8 {
-        self.text_buffer = None;
-      }
+        if c == '\n' as u8 {
+            self.text_buffer = None;
+        }
 
-      return c as u16;
+        return c as u16;
     }
 
     fn start_buffering_string(&mut self, s: String) {
-      self.text_buffer = Some(s.chars().rev().collect());
+        self.text_buffer = Some(s.chars().rev().collect());
     }
 }
 
@@ -334,21 +334,21 @@ pub fn run_loop(instructions: Vec<u16>) {
             }
             Opcode::Ret => {
                 if let Some(target) = state.pop() {
-                  state.jump_to(target);
+                    state.jump_to(target);
                 } else {
-                  break;
+                    break;
                 }
             }
             Opcode::In => {
-              if !state.is_buffering_string() {
-                let mut text = String::new();
-                std::io::stdin().read_line(&mut text).unwrap();
-                state.start_buffering_string(text);
-              }
+                if !state.is_buffering_string() {
+                    let mut text = String::new();
+                    std::io::stdin().read_line(&mut text).unwrap();
+                    state.start_buffering_string(text);
+                }
 
-              let value = state.text_buffer_char();
-              let target = state.read_next();
-              state.set_register(target, value);
+                let value = state.text_buffer_char();
+                let target = state.read_next();
+                state.set_register(target, value);
             }
             Opcode::Out => {
                 let byte = state.read_next();
