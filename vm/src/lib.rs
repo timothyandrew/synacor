@@ -1,5 +1,5 @@
 use std::io::prelude::*;
-use std::{collections::HashMap, fs::File, mem};
+use std::{collections::HashMap, fs::File};
 
 #[derive(Debug)]
 enum Opcode {
@@ -187,7 +187,7 @@ pub fn read_binary(filename: &str) -> Vec<u16> {
         instructions.push(instruction);
     }
 
-    return instructions;
+    instructions
 }
 
 pub fn run_loop(instructions: Vec<u16>) {
