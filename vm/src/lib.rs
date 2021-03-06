@@ -57,6 +57,213 @@ impl From<u16> for Opcode {
     }
 }
 
+struct Instruction {
+    opcode: Opcode,
+    args: Vec<u16>,
+}
+
+impl Instruction {
+    pub fn build(opcode: Opcode, state: &mut State) -> Instruction {
+        match opcode {
+            Opcode::Halt => Instruction {
+                opcode,
+                args: vec![],
+            },
+            Opcode::Add => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::Mult => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::Mod => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::Push => {
+                let value = state.read_next();
+                let a = state.resolve_value(value);
+
+                Instruction {
+                    opcode,
+                    args: vec![a],
+                }
+            }
+            Opcode::Pop => {
+                let a = state.read_next();
+
+                Instruction {
+                    opcode,
+                    args: vec![a],
+                }
+            }
+            Opcode::Gt => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::Eq => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::And => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::Or => {
+                let values = state.read_many(3);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+                let c = state.resolve_value(values[2]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b, c],
+                }
+            }
+            Opcode::Not => {
+                let values = state.read_many(2);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b],
+                }
+            }
+            Opcode::Set => {
+                let values = state.read_many(2);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b],
+                }
+            }
+            Opcode::Jmp => {
+                let to = state.read_next();
+
+                Instruction {
+                    opcode,
+                    args: vec![to],
+                }
+            }
+            Opcode::JmpIfTrue => {
+                let values = state.read_many(2);
+                let a = state.resolve_value(values[0]);
+                let b = state.resolve_value(values[1]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b],
+                }
+            }
+            Opcode::JmpIfFalse => {
+                let values = state.read_many(2);
+                let a = state.resolve_value(values[0]);
+                let b = state.resolve_value(values[1]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b],
+                }
+            }
+            Opcode::Call => {
+                let value = state.read_next();
+                let a = state.resolve_value(value);
+
+                Instruction {
+                    opcode,
+                    args: vec![a],
+                }
+            }
+            Opcode::RMem => {
+                let values = state.read_many(2);
+                let a = values[0];
+                let b = state.resolve_value(values[1]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b],
+                }
+            }
+            Opcode::WMem => {
+                let values = state.read_many(2);
+                let a = state.resolve_value(values[0]);
+                let b = state.resolve_value(values[1]);
+
+                Instruction {
+                    opcode,
+                    args: vec![a, b],
+                }
+            }
+            Opcode::Ret => Instruction {
+                opcode,
+                args: vec![],
+            },
+            Opcode::In => Instruction {
+                opcode,
+                args: vec![],
+            },
+            Opcode::Out => {
+                let byte = state.read_next();
+                let byte = state.resolve_value(byte);
+
+                Instruction {
+                    opcode,
+                    args: vec![byte],
+                }
+            }
+            Opcode::Noop => Instruction {
+                opcode,
+                args: vec![],
+            },
+        }
+    }
+}
+
 struct State {
     instructions: HashMap<u16, u16>,
     registers: Vec<u16>,
@@ -166,6 +373,32 @@ impl State {
     fn start_buffering_string(&mut self, s: String) {
         self.text_buffer = Some(s.chars().rev().collect());
     }
+
+    fn dump(&self) {
+        let mut s = String::new();
+
+        let instructions: Vec<_> = self.instructions.iter().collect();
+        let mut instructions = instructions.clone();
+        instructions.sort_by_key(|(&i, _)| i);
+
+        s.push_str("IP\n");
+        s.push_str(&self.ip.to_string());
+        s.push_str("\n");
+        s.push_str(&self.instructions[&(self.ip as u16)].to_string());
+
+        s.push_str("\n\nRegisters\n");
+        s.push_str(serde_json::to_string(&self.registers).unwrap().as_ref());
+
+        s.push_str("\n\nStack\n");
+        s.push_str(serde_json::to_string(&self.stack).unwrap().as_ref());
+
+        s.push_str("\n\nMemory\n");
+        s.push_str(serde_json::to_string(&instructions).unwrap().as_ref());
+
+        std::fs::write("dump.txt", s).unwrap();
+
+        eprintln!("Dumped");
+    }
 }
 
 fn read_num(mut f: &File, mut buf: [u8; 2]) -> Option<u16> {
@@ -194,143 +427,113 @@ pub fn run_loop(instructions: Vec<u16>) {
     let mut state = State::build(instructions);
 
     loop {
-        match state.opcode() {
+        let instruction = Instruction::build(state.opcode(), &mut state);
+
+        match instruction.opcode {
             Opcode::Halt => {
                 break;
             }
             Opcode::Add => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                let result = ((b as usize + c as usize) % 32768) as u16;
-                state.set_register(a, result);
+              if let [a, b, c] = instruction.args.as_slice() {
+                let result = ((*b as usize + *c as usize) % 32768) as u16;
+                state.set_register(*a, result);
+              }
             }
             Opcode::Mult => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                let result = ((b as usize * c as usize) % 32768) as u16;
-                state.set_register(a, result);
+              if let [a, b, c] = instruction.args.as_slice() {
+                let result = ((*b as usize * *c as usize) % 32768) as u16;
+                state.set_register(*a, result);
+              }
             }
             Opcode::Mod => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                let result = b % c;
-                state.set_register(a, result);
+              if let [a, b, c] = instruction.args.as_slice() {
+                let result = *b % *c;
+                state.set_register(*a, result);
+              }
             }
             Opcode::Push => {
-                let value = state.read_next();
-                let a = state.resolve_value(value);
-                state.push(a);
+              if let [a] = instruction.args.as_slice() {
+                state.push(*a);
+              }
             }
             Opcode::Pop => {
+              if let [a] = instruction.args.as_slice() {
                 let value = state.pop().unwrap();
-                let a = state.read_next();
-                state.set_register(a, value);
+                state.set_register(*a, value);
+              }
             }
             Opcode::Gt => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                if b > c {
-                    state.set_register(a, 1);
+              if let [a, b, c] = instruction.args.as_slice() {
+                if *b > *c {
+                    state.set_register(*a, 1);
                 } else {
-                    state.set_register(a, 0);
+                    state.set_register(*a, 0);
                 }
+              }
             }
             Opcode::Eq => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                if b == c {
-                    state.set_register(a, 1);
+              if let [a, b, c] = instruction.args.as_slice() {
+                if *b == *c {
+                    state.set_register(*a, 1);
                 } else {
-                    state.set_register(a, 0);
+                    state.set_register(*a, 0);
                 }
+              }
             }
             Opcode::And => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                state.set_register(a, b & c);
+              if let [a, b, c] = instruction.args.as_slice() {
+                state.set_register(*a, *b & *c);
+              }
             }
             Opcode::Or => {
-                let values = state.read_many(3);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-                let c = state.resolve_value(values[2]);
-
-                state.set_register(a, b | c);
+              if let [a, b, c] = instruction.args.as_slice() {
+                state.set_register(*a, *b | *c);
+              }
             }
             Opcode::Not => {
-                let values = state.read_many(2);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-
-                state.set_register(a, !b & 32767);
+              if let [a, b] = instruction.args.as_slice() {
+                state.set_register(*a, !*b & 32767);
+              }
             }
             Opcode::Set => {
-                let values = state.read_many(2);
-                let a = values[0];
-                let b = values[1];
-
-                state.set_register(a, state.resolve_value(b));
+              if let [a, b] = instruction.args.as_slice() {
+                state.set_register(*a, *b);
+              }
             }
             Opcode::Jmp => {
-                let to = state.read_next();
-                state.jump_to(to);
+              if let [to]  = instruction.args.as_slice() {
+                state.jump_to(*to);
+              }
             }
             Opcode::JmpIfTrue => {
-                let values = state.read_many(2);
-                let a = values[0];
-                let b = values[1];
-
-                if state.resolve_value(a) != 0 {
-                    state.jump_to(state.resolve_value(b));
+              if let [a, b] = instruction.args.as_slice() {
+                if *a != 0 {
+                    state.jump_to(*b);
                 }
+              }
             }
             Opcode::JmpIfFalse => {
-                let values = state.read_many(2);
-                let a = values[0];
-                let b = values[1];
-
-                if state.resolve_value(a) == 0 {
-                    state.jump_to(state.resolve_value(b));
+              if let [a, b] = instruction.args.as_slice() {
+                if *a == 0 {
+                    state.jump_to(*b);
                 }
+              }
             }
             Opcode::Call => {
-                let value = state.read_next();
-                let a = state.resolve_value(value);
-
+              if let [a] = instruction.args.as_slice() {
                 state.push(state.ip as u16);
-                state.jump_to(a);
+                state.jump_to(*a);
+              }
             }
             Opcode::RMem => {
-                let values = state.read_many(2);
-                let a = values[0];
-                let b = state.resolve_value(values[1]);
-
-                state.set_register(a, state.read_mem(b));
+              if let [a, b] = instruction.args.as_slice() {
+                state.set_register(*a, state.read_mem(*b));
+              }
             }
             Opcode::WMem => {
-                let values = state.read_many(2);
-                let a = state.resolve_value(values[0]);
-                let b = state.resolve_value(values[1]);
-
-                state.write_mem(a, b);
+              if let [a, b] = instruction.args.as_slice() {
+                state.write_mem(*a, *b);
+              }
             }
             Opcode::Ret => {
                 if let Some(target) = state.pop() {
@@ -343,6 +546,12 @@ pub fn run_loop(instructions: Vec<u16>) {
                 if !state.is_buffering_string() {
                     let mut text = String::new();
                     std::io::stdin().read_line(&mut text).unwrap();
+
+                    if text == "debug\n" {
+                        state.dump();
+                        continue;
+                    }
+
                     state.start_buffering_string(text);
                 }
 
@@ -351,10 +560,11 @@ pub fn run_loop(instructions: Vec<u16>) {
                 state.set_register(target, value);
             }
             Opcode::Out => {
-                let byte = state.read_next();
-                let byte = state.resolve_value(byte) as u8;
+              if let [a] = instruction.args.as_slice() {
+                let byte = *a as u8;
                 let char = byte as char;
                 print!("{}", char);
+              }
             }
             Opcode::Noop => {
                 state.jump_by(1);
