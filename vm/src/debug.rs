@@ -1,12 +1,12 @@
 use super::exec::{Instruction, State};
 use super::opcode::Opcode;
-use std::iter::FromIterator;
 use super::util;
 use std::collections::HashSet;
+use std::iter::FromIterator;
 
 pub struct Debugger {
     pub breakpoints: HashSet<u16>,
-    pub enabled: bool
+    pub enabled: bool,
 }
 
 impl Debugger {
@@ -15,7 +15,7 @@ impl Debugger {
 
         Debugger {
             breakpoints: HashSet::from_iter(breakpoints.iter().cloned()),
-            enabled: false
+            enabled: false,
         }
     }
 
@@ -101,7 +101,11 @@ impl Debugger {
                         eprintln!("{}", mem);
                     }
                     "t" => {
-                        let stack = state.stack.iter().map(|v| v.to_string()).collect::<Vec<_>>();
+                        let stack = state
+                            .stack
+                            .iter()
+                            .map(|v| v.to_string())
+                            .collect::<Vec<_>>();
                         eprintln!("{}", stack.join(" "));
                     }
                     "c" => {

@@ -1,8 +1,8 @@
 mod build;
 mod debug;
 mod exec;
-mod util;
 mod opcode;
+mod util;
 
 pub fn start(filename: &str) {
     let instructions = build::read_binary(filename);
