@@ -1,4 +1,5 @@
 use super::debug::Debugger;
+use super::util;
 use super::opcode::Opcode;
 
 use std::{
@@ -231,6 +232,9 @@ impl Instruction {
                     args: vec![resolved_byte],
                 }
             }
+            Opcode::Unknown => {
+                panic!("Unknown opcode");
+            },
             Opcode::Noop => Instruction {
                 opcode,
                 unresolved_args: vec![],
@@ -239,32 +243,33 @@ impl Instruction {
         }
     }
 
-    fn register_pretty(&self, s: &u16) -> String {
-        match s {
-            32768 => "r0".to_owned(),
-            32769 => "r1".to_owned(),
-            32770 => "r2".to_owned(),
-            32771 => "r3".to_owned(),
-            32772 => "r4".to_owned(),
-            32773 => "r5".to_owned(),
-            32774 => "r6".to_owned(),
-            32775 => "r7".to_owned(),
-            _ => s.to_string(),
+    fn maybe_qualify_address(&self, n: u16, labels: &HashMap<usize, String>) -> String {
+        if let Some(label) = labels.get(&(n as usize)) {
+            format!("{} ({})", n, label)
+        } else {
+            n.to_string()
         }
     }
 
-    pub fn disassemble(&self) -> String {
+    pub fn disassemble(&self, ip: usize, labels: &HashMap<usize, String>) -> String {
+        let label = if let Some(label) = labels.get(&ip) {
+            format!("{}\n", label)
+        } else {
+            "".to_owned()
+        };
+
         format!(
-            "{} / {} / {}",
+            "{}{} / {} / {}",
+            label,
             self.opcode.to_string(),
             self.args
                 .iter()
-                .map(|n| n.to_string())
+                .map(|n| self.maybe_qualify_address(*n, labels))
                 .collect::<Vec<_>>()
                 .join(", "),
             self.unresolved_args
                 .iter()
-                .map(|n| self.register_pretty(n))
+                .map(|n| util::register_pretty(n))
                 .collect::<Vec<_>>()
                 .join(", ")
         )
@@ -277,6 +282,7 @@ pub struct State {
     pub ip: usize,
     pub stack: Vec<u16>,
     pub text_buffer: Option<String>,
+    pub call_stack: Vec<u16>
 }
 
 impl State {
@@ -293,6 +299,7 @@ impl State {
             ip: 0,
             stack: vec![],
             text_buffer: None,
+            call_stack: vec![]
         }
     }
 
@@ -413,6 +420,7 @@ pub fn run_loop(instructions: Vec<u16>) {
     let mut debugger = Debugger::build();
 
     loop {
+        debugger.stats.record_instruction();
         debugger.check_for_breakpoints(state.ip);
 
         let instruction = Instruction::build(state.opcode(), &mut state);
@@ -422,6 +430,9 @@ pub fn run_loop(instructions: Vec<u16>) {
         }
 
         match instruction.opcode {
+            Opcode::Unknown => {
+                panic!("Unknown opcode {}", state.instructions[&(state.ip as u16)]);
+            }
             Opcode::Halt => {
                 break;
             }
@@ -489,6 +500,12 @@ pub fn run_loop(instructions: Vec<u16>) {
             }
             Opcode::Set => {
                 if let [a, b] = instruction.args.as_slice() {
+                    // if *a == 32768 && *b == 26851 {
+                    //     debugger.enable();
+                    //     state.ip -= 3;
+                    //     continue;
+                    // }
+
                     state.set_register(*a, *b);
                 }
             }
@@ -513,7 +530,9 @@ pub fn run_loop(instructions: Vec<u16>) {
             }
             Opcode::Call => {
                 if let [a] = instruction.args.as_slice() {
+                    debugger.stats.record_call(*a);
                     state.push(state.ip as u16);
+                    state.call_stack.push((state.ip - 2) as u16);
                     state.jump_to(*a);
                 }
             }
@@ -529,6 +548,7 @@ pub fn run_loop(instructions: Vec<u16>) {
             }
             Opcode::Ret => {
                 if let Some(target) = state.pop() {
+                    state.call_stack.pop().unwrap();
                     state.jump_to(target);
                 } else {
                     break;
@@ -562,11 +582,11 @@ pub fn run_loop(instructions: Vec<u16>) {
             }
             Opcode::Out => {
                 if let [a] = instruction.args.as_slice() {
-                    if !debugger.enabled && *a == 70 as u16 {
-                        debugger.enable();
-                        state.ip -= 2;
-                        continue;
-                    }
+                    // if !debugger.enabled && *a == 68 as u16 {
+                    //     debugger.enable();
+                    //     // state.ip -= 2;
+                    //     continue;
+                    // }
 
                     let byte = *a as u8;
                     let char = byte as char;
